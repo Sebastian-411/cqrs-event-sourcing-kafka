@@ -85,7 +85,7 @@
 
 
 
-# Documento de Cambios para Garantizar el Orden de Consumo de Eventos
+# Cambios para Garantizar el Orden de Consumo de Eventos
 
 ## 1. **Descripción de los Cambios Implementados**
 
