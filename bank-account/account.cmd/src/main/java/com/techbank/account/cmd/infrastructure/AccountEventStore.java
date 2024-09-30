@@ -9,6 +9,7 @@ import com.techbank.cqrs.core.exceptions.ConcurrencyException;
 import com.techbank.cqrs.core.infrastructure.EventStore;
 import com.techbank.cqrs.core.producers.EventProducer;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
@@ -17,6 +18,9 @@ import java.util.stream.Collectors;
 
 @Service
 public class AccountEventStore implements EventStore {
+    @Value("${spring.kafka.topic}")
+    private String topic;
+
     @Autowired
     private EventProducer eventProducer;
 
@@ -30,21 +34,21 @@ public class AccountEventStore implements EventStore {
             throw new ConcurrencyException();
         }
         var version = expectedVersion;
-        for (var event: events) {
-           version++;
-           event.setVersion(version);
-           var eventModel = EventModel.builder()
-                   .timeStamp(new Date())
-                   .aggregateIdentifier(aggregateId)
-                   .aggregateType(AccountAggregate.class.getTypeName())
-                   .version(version)
-                   .eventType(event.getClass().getTypeName())
-                   .eventData(event)
-                   .build();
-           var persistedEvent = eventStoreRepository.save(eventModel);
-           if (!persistedEvent.getId().isEmpty()) {
-               eventProducer.produce(event.getClass().getSimpleName(), event);
-           }
+        for (var event : events) {
+            version++;
+            event.setVersion(version);
+            var eventModel = EventModel.builder()
+                    .timeStamp(new Date())
+                    .aggregateIdentifier(aggregateId)
+                    .aggregateType(AccountAggregate.class.getTypeName())
+                    .version(version)
+                    .eventType(event.getClass().getTypeName())
+                    .eventData(event)
+                    .build();
+            var persistedEvent = eventStoreRepository.save(eventModel);
+            if (!persistedEvent.getId().isEmpty()) {
+                eventProducer.produce(topic, event);
+            }
         }
     }
 

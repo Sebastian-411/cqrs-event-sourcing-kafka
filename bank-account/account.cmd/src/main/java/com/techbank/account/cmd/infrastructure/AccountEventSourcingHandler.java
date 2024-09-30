@@ -6,6 +6,7 @@ import com.techbank.cqrs.core.handlers.EventSourcingHandler;
 import com.techbank.cqrs.core.infrastructure.EventStore;
 import com.techbank.cqrs.core.producers.EventProducer;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
@@ -17,6 +18,9 @@ public class AccountEventSourcingHandler implements EventSourcingHandler<Account
 
     @Autowired
     private EventProducer eventProducer;
+
+    @Value("${spring.kafka.topic}")
+    private String topic;
 
     @Override
     public void save(AggregateRoot aggregate) {
@@ -39,12 +43,13 @@ public class AccountEventSourcingHandler implements EventSourcingHandler<Account
     @Override
     public void republishEvents() {
         var aggregateIds = eventStore.getAggregateIds();
-        for(var aggregateId: aggregateIds) {
+        for (var aggregateId : aggregateIds) {
             var aggregate = getById(aggregateId);
-            if (aggregate == null || !aggregate.getActive()) continue;
+            if (aggregate == null || !aggregate.getActive())
+                continue;
             var events = eventStore.getEvents(aggregateId);
-            for(var event: events) {
-                eventProducer.produce(event.getClass().getSimpleName(), event);
+            for (var event : events) {
+                eventProducer.produce(topic, event);
             }
         }
     }
